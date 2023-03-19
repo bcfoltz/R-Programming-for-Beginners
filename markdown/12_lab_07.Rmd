@@ -1,0 +1,66 @@
+---
+title: "Lab 07"
+author: "Brandon Foltz"
+date: "2023-02-26"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+```{r}
+#list.files("../data/open_data_year_one")
+#files_in_year_one <- list.files("../data/open_data_year_one")
+#files_in_year_one <- str_subset(files_in_year_one, "\\.csv$")
+files_in_year_one <- (str_subset(list.files("../data/open_data_year_one"), "station|trip|weather"))
+```
+
+```{r}
+data_list <- vector("list", length(files_in_year_one))
+data_list_names <- str_sub(files_in_year_one, 6, -5) # cuts off year and the .csv
+# regular expression method
+# str_remove_all(files_in_year_one, "2015_|\\.csv")
+```
+
+```{r}
+names(data_list) <- data_list_names
+```
+
+```{r}
+for (i in seq_along(files_in_year_one)) {
+  data_list[[i]] <- read_csv(paste0("../data/open_data_year_one/", files_in_year_one[i]))
+}
+# [[]] to grab the dataframe and not the individual columns
+data_list
+```
+
+```{r}
+file_paths <- paste0("../data/open_data_year_one/", files_in_year_one)
+data_list <- setNames(lapply(file_paths, read_csv), data_list_names)  #easy way
+```
+
+```{r}
+str(data_list)
+data_list[["trip_data"]]
+```
+
+```{r}
+data_list[["trip_data"]] <- data_list[["trip_data"]]  %>%
+  mutate(gender = ifelse(usertype == "Short-Term Pass Holder", "Unknown", gender))
+
+data_list[["trip_data"]]
+```
+
+```{r}
+library(lubridate)
+data_list[["trip_data"]] <- data_list[["trip_data"]]  %>%
+  mutate(across(c(starttime, stoptime), mdy_hm))
+```
+
+```{r}
+data_list[["weather_data"]] %>%
+  mutate(Date = mdy(Date))
+```
+

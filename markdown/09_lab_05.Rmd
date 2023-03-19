@@ -1,0 +1,95 @@
+---
+title: "Lab 05"
+author: "Brandon Foltz"
+date: "2023-02-25"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+```
+```{r import_data cache = TRUE}
+king_raw <- read_csv("../data/king_county_elections_2016.txt")
+```
+```{r}
+glimpse(king_raw)
+king_raw %>%
+  group_by(Race) %>%
+  tally() %>%
+  head(10)
+  
+king_raw <- king_raw %>%
+  rename(legislative_district = LEG, county_council_district = CC, congressional_district = CG) %>%
+
+king_raw %>%
+  head(10)
+
+# king_roi  <- king_raw %>%
+#   filter(Race == "Governor" | Race == "Lieutenant Governor" | Race == "US President & Vice President")
+
+king_roi <- king_raw %>%
+  filter(Race %in% c("Governor", "Lieutenant Governor", "US President & Vice President"))
+
+head(king_roi)
+tail(king_roi)
+```
+
+```{r}
+king_roi %>%
+  arrange(desc(SumOfCount))
+
+king_seattle <- king_roi %>%
+  mutate(Seattle = ifelse(substr(Precinct, start = 1, stop = 4) == "SEA ", "Seattle", "Not Seattle" )) %>%
+  filter(Seattle == "Seattle")
+```
+
+```{r}
+king_pres_turnout <- king_seattle %>%
+  select(Precinct, Race, CounterType, SumOfCount) %>%
+  filter(Race == "US President & Vice President") %>%
+  filter(CounterType %in% c("Times Counted", "Registered Voters")) %>%
+  pivot_wider(names_from = CounterType, values_from = SumOfCount) %>%
+  rename(Registered_Voters = "Registered Voters", Times_Counted = "Times Counted") %>%
+  mutate(Turnout = Times_Counted / Registered_Voters) %>%
+  select(-Race)
+```
+
+```{r}
+king_pres_turnout %>%
+  select(Precinct, Times_Counted, Registered_Voters, Turnout) %>%
+  head(10)
+```
+
+```{r}
+king_any_candidate_total <- king_seattle %>%
+  filter(Party != "NP" | CounterType == "Write-In") %>%
+  group_by(Precinct, Race) %>%
+  summarize(total_votes_any_candidate = sum(SumOfCount))
+```
+
+```{r}
+king_seattle %>%
+  distinct(Party, Race, CounterType)
+
+king_dem_votes <- king_seattle %>%
+  filter(Party %in% c("Dem", "DPN")) %>%
+  rename(dem_votes = SumOfCount) %>%
+  select(Precinct, Race, dem_votes)
+```
+
+```{r}
+king_dem_perc <- king_any_candidate_total %>%
+  left_join(king_dem_votes, by = c("Precinct", "Race")) %>%
+  mutate(perc_dem_votes = dem_votes / total_votes_any_candidate)
+```
+
+```{r}
+king_dem_perc %>%
+  left_join(king_pres_turnout, by = c("Precinct")) %>%
+  pivot_wider(names_from = Race, values_from = perc_dem_votes)
+```
+

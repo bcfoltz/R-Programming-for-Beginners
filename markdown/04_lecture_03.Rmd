@@ -1,0 +1,273 @@
+---
+title: "Lecture 03: Manipulating and Summarizing Data"
+author: "Brandon Foltz"
+date: "2023-02-22"
+output: html_document
+---
+
+https://youtu.be/119PCaj0wyA
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages}
+library(tidyverse)
+library(gapminder)
+library(pander)
+library(nycflights13)
+```
+
+```{r filter_rows_subsetting}
+#filter ROWS
+gapminder %>%
+  filter(country == "Canada")  %>%
+  head(5)
+```
+
+```{r linear_model}
+gapminder %>%
+  lm(pop~year, data = .) %>%
+  summary()
+```
+
+```{r linear_model_americas}
+americas_regression_pop_year  <- gapminder %>%
+  filter(continent == "Americas") %>%
+  lm(pop~year, data = .)
+summary(americas_regression_pop_year)
+```
+
+```{r filter_subset_intersection}
+gapminder %>%
+  filter(country == "Canada" & lifeExp > 70) %>%
+  head(5)
+```
+
+```{r filter_subset_union}
+gapminder %>%
+  filter(country == "Canada" | continent == "Asia") %>%
+  head(10)
+
+```
+
+```{r filter_subset_vector_list}
+nafta_countries <- c("United States", "Canada", "Mexico")
+
+nafta <- gapminder %>%
+  filter(country %in% nafta_countries)
+nafta
+```
+
+```{r distict_combos}
+gapminder %>%
+  distinct(continent, year)
+#only grabs the specified columns
+```
+```{r distinct_keep_all}
+gapminder %>%
+  distinct(continent, year, .keep_all = T)
+#keeps the remaining columns
+```
+
+```{r sample_n}
+set.seed(789)
+nafta %>%
+  sample_n(size = 10, replace = F)
+#random sample size n
+```
+
+```{r sample_frac}
+set.seed(789)
+nafta %>%
+  sample_frac(size = .1, replace = F)
+#random sample size proportion
+```
+
+```{r arrange}
+nafta %>%
+  arrange(year, desc(pop))
+#arrange for sorting in order left to right. In this case, ascending year then descending population
+```
+
+```{r select}
+nafta %>%
+  select(country, year, pop) %>%
+  head(5)
+#select columns and can use a minus sign to remove columns and keep the rest. Also has helper functions like starts_with() and ends.with() also contains() and start:end.
+```
+
+```{r select_where_numeric}
+gapminder %>%
+  select(where(is.numeric))  %>%
+  head(5)
+#selects the columns that meet some criteria
+```
+
+```{r select_where_character}
+gapminder %>%
+  select(where(is.character)) %>%
+  head(5)
+```
+
+```{r select_rename}
+gapminder %>%
+  select(life_expectancy = lifeExp) %>%
+  head(5)
+```
+
+```{r rename}
+nafta %>%
+  select(country, year, lifeExp) %>%
+  rename(life_expectancy = lifeExp) %>%
+  head(5)
+```
+
+
+```{r pander}
+nafta %>%
+  filter(country == "Mexico") %>%
+  select(year, lifeExp) %>%
+  rename(Year = year, `Life Expectancy` = lifeExp) %>%
+  head(5) %>%
+  pander(style = "rmarkdown", caption = "Mexican Life Expectancy")
+```
+
+```{r mutate}
+nafta %>%
+  filter(country == "Mexico") %>%
+  select(year, pop, lifeExp) %>%
+  mutate(pop_million = pop/10e6,
+         life_exp_past_40 = lifeExp - 40) %>%
+  head(5)
+```
+
+```{r ifelse_vector}
+#ifelse(test = x==y, yes = first_value, no = second_value)
+example_vect <- c(1,0,NA,-2)
+ifelse(example_vect > 0, "Positive", "Negative")
+```
+
+```{r ifelse}
+nafta  %>%
+  mutate(short_country = ifelse(country == "United States", "USA", as.character(country))) %>%
+  select(country, short_country, year, pop) %>%
+  arrange(year, short_country) %>%
+  head(5)
+# have to include as.character to avoid having TRUE and FALSE returned since it is boolean
+```
+
+```{r recode}
+nafta %>%
+  mutate(country = recode(country,
+                          "United States" = "USA",
+                          "Mexico" = "Mex",
+                          "Canada" = "Can")) %>%
+  distinct(country)
+```
+
+```{r case_when}
+gapminder %>%
+  mutate(gdpPercap_ordinal = 
+           case_when(
+             gdpPercap < 700 ~ "low",
+             gdpPercap >= 700 & gdpPercap < 800 ~ "moderate",
+             TRUE ~ "high")) %>%
+  slice(6:9)
+# essentially mutple ifelse statements at the same time
+```
+
+```{r pull}
+gapminder %>%
+  pull(lifeExp) %>%
+  head(4)
+# pulls out into a vector
+
+gapminder %>%
+  select(lifeExp) %>%
+  head(4)
+```
+
+The average life expectancy in Afghanistan from 1952 to 2007 was `r gapminder %>% filter(country == "Afghanistan") %>% pull(lifeExp) %>% mean() %>% round(1)` years.
+
+## Summarizing with dplyr
+
+```{r summarize}
+nafta %>%
+  filter(year == 1982) %>%
+  summarise(n_obs = n(),
+            total_pop = sum(pop),
+            mean_life_exp = mean(lifeExp),
+            range_life_exp = max(lifeExp) - min(lifeExp))
+```
+
+```{r summarize_across}
+nafta %>%
+  filter(year == 1982) %>%
+  summarise(
+    across(
+      c(lifeExp, pop), 
+      list(
+        avg = ~mean(.), 
+        sd = ~sd(.))))
+#across two variables, find the mean and sd for each
+
+# dataframe %>%
+#   summarize(across(everything(), list(mean = ~mean(.), sd = ~sd(.))))
+# 
+# dataframe %>%
+#   summarise(across(where(is.numeric), list(mean = ~mean(.), sd = ~sd(.))))
+```
+
+```{r group_by}
+nafta %>%
+  group_by(year) %>%
+  summarise(num_countries = n_distinct(country),
+            total_pop = sum(pop),
+            total_gdp_per_cap = sum(pop*gdpPercap/total_pop)) %>%
+  head(5)
+# provides one summary value for each group
+```
+
+```{r window_functions}
+nafta %>%
+  select(country, year, pop) %>%
+  filter(year >= 2002) %>%
+  group_by(country) %>%
+  mutate(lag_pop = lag(pop, order_by = year),
+         pop_chg = pop - lag_pop) %>%
+  head(5)
+```
+
+```{r left_join}
+flights %>%
+  filter(dest == "SEA") %>%
+  select(tailnum) %>%
+  left_join(planes  %>%
+              select(tailnum, manufacturer),
+            by = "tailnum") %>%
+  count(manufacturer) %>%
+  arrange(desc(n))
+```
+```{r left_join_2}
+flights %>%
+  filter(dest == "SEA")  %>%
+  select(carrier) %>%
+  left_join(airlines, by = "carrier") %>%
+  group_by(name) %>%
+  tally() %>%
+  arrange(desc(n))
+```
+
+```{r left_join_3}
+flights %>%
+  select(origin, year, month, day, hour, dep_delay) %>%
+  inner_join(weather,
+             by = c("origin", "year", "month", "day", "hour")) %>%
+  select(dep_delay, wind_gust) %>%
+  # removing rows with missing values
+  filter(!is.na(dep_delay) & !is.na(wind_gust)) %>%
+  ggplot(aes(x = wind_gust, y = dep_delay)) +
+  geom_smooth()
+```
+

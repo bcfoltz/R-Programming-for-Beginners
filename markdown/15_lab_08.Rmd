@@ -1,0 +1,135 @@
+---
+title: "Lab 08"
+author: "Brandon Foltz"
+date: "2023-02-27"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+```{r}
+#list.files("../data/open_data_year_one")
+#files_in_year_one <- list.files("../data/open_data_year_one")
+#files_in_year_one <- str_subset(files_in_year_one, "\\.csv$")
+files_in_year_one <- (str_subset(list.files("../data/open_data_year_one"), "station|trip|weather"))
+```
+
+```{r}
+data_list <- vector("list", length(files_in_year_one))
+data_list_names <- str_sub(files_in_year_one, 6, -5) # cuts off year and the .csv
+# regular expression method
+# str_remove_all(files_in_year_one, "2015_|\\.csv")
+```
+
+```{r}
+names(data_list) <- data_list_names
+```
+
+```{r}
+for (i in seq_along(files_in_year_one)) {
+  data_list[[i]] <- read_csv(paste0("../data/open_data_year_one/", files_in_year_one[i]))
+}
+# [[]] to grab the dataframe and not the individual columns
+data_list
+```
+
+```{r}
+file_paths <- paste0("../data/open_data_year_one/", files_in_year_one)
+data_list <- setNames(lapply(file_paths, read_csv), data_list_names)  #easy way
+```
+
+```{r}
+str(data_list)
+data_list[["trip_data"]]
+```
+
+```{r}
+data_list[["trip_data"]] <- data_list[["trip_data"]]  %>%
+  mutate(gender = ifelse(usertype == "Short-Term Pass Holder", "Unknown", gender))
+
+data_list[["trip_data"]]
+```
+
+```{r}
+library(lubridate)
+data_list[["trip_data"]] <- data_list[["trip_data"]]  %>%
+  mutate(across(c(starttime, stoptime), mdy_hm))
+```
+
+```{r}
+data_list[["weather_data"]] <- data_list[["weather_data"]] %>%
+  mutate(Date = mdy(Date))
+```
+
+```{r extract_function}
+region_extract <- function(x){
+  return(str_extract(x, "^[A-Z]*"))
+}
+```
+
+```{r extract_region_terminal}
+data_list[["station_data"]] <- data_list[["station_data"]] %>%
+  mutate(terminal_region = 
+    region_extract(terminal)
+  ) %>%
+  glimpse()
+```
+
+```{r extract_station_region}
+data_list[["trip_data"]] <- data_list[["trip_data"]]  %>%
+  mutate(to_station_region = region_extract(to_station_id)) %>%
+  mutate(from_station_region = region_extract(from_station_id)) %>%
+  glimpse()
+```
+
+```{r}
+data_list[["weather_data"]] <- data_list[["weather_data"]] %>%
+  mutate(Rain = ifelse(!is.na(Events) & str_detect(Events, "Rain"), "Rain", "No rain"))  %>%
+  glimpse()
+
+data_list[["weather_data"]] %>%
+  count(Events, Rain)
+
+# same process done in two stages
+# data_list[["weather_data"]]  %>%
+#   mutate(Rain = ifelse(str_detect(Events, "Rain"), "Rain", "No rain"),
+#          Rain = ifelse(is.na(Rain), "No rain", Rain))
+```
+
+```{r}
+data_list[["trip_data"]] %>% glimpse()
+data_list[["weather_data"]] %>% glimpse()
+
+data_list[["trip_data"]] <- data_list[["trip_data"]] %>%
+  mutate(Date = as.Date(starttime))
+
+trips_weather <- data_list[["trip_data"]] %>%
+  left_join(data_list[["weather_data"]] %>%
+              select(Date, Rain))
+```
+
+```{r daily_rain_rides}
+daily_rain_rides <- function(region_code, direction){
+  if (direction == "to") {
+     temp_df <- trips_weather %>% 
+      filter(to_station_region == region_code)
+  } else if (direction == "from") {
+    temp_df <- trips_weather %>% 
+      filter(from_station_region == region_code)
+  }
+  temp_df <- temp_df %>% count(Date, Rain) # counts rides on an individual date
+  ggplot(temp_df,
+         aes(x = Date, y = n, color = Rain)) +
+    geom_point() +
+    ylab("Number of Rides") +
+    scale_color_manual(name = "Weather",
+                       values = c("Rain" = "deepskyblue", "No rain" = "black")) +
+    ggtitle(paste("Daily rides going", direction, region_code)) +
+    geom_smooth() +
+    theme_minimal()
+}
+```
+

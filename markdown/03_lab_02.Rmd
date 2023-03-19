@@ -1,0 +1,139 @@
+---
+title: "Lab 02"
+author: "Brandon Foltz"
+date: "2023-02-22"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+https://youtu.be/RhyVKggSmMY
+
+```{r libraries, include=FALSE}
+library(tidyverse)
+library(gapminder)
+```
+
+```{r explore, include=FALSE}
+glimpse(gapminder)
+```
+
+```{r}
+gapminder %>%
+  ggplot(aes(x = gdpPercap, y = lifeExp, color = continent)) +
+  geom_point() +
+  facet_wrap(~continent) +
+  ggtitle("Life expectancy vs GDP per cap by Continent") +
+  xlab("GDP per capita US$") +
+  ylab("Life expectancy (yrs)")
+```
+
+```{r}
+gapminder %>%
+  group_by(year) %>%
+  mutate(gdp_cat = ntile(gdpPercap, 4)) %>%
+  ggplot(aes(x = gdpPercap, y = lifeExp, color = continent)) +
+  geom_point() +
+  scale_x_log10()+
+  facet_wrap(~gdp_cat)
+```
+```{r}
+gapminder %>%
+  group_by(year) %>%
+  mutate(gdp_cat = factor(ntile(gdpPercap, 4))) %>%
+  ggplot(aes(x = gdpPercap, y = lifeExp, color = gdp_cat)) +
+  geom_point()+
+  scale_x_log10()+
+  facet_wrap(~continent)
+```
+```{r}
+gapminder %>%
+  filter(country %in% c("Japan", "China")) %>%
+  ggplot(aes(x = year, y = lifeExp, group = country, color = country)) +
+  geom_line() +
+  scale_color_manual(values = c("China" = "red", "Japan" = "purple")) +
+  xlab("Year")+
+  ylab("Life Expectancy") +
+  theme_classic() +
+  ggtitle("China vs Japan Life Expectancy") +
+  theme(legend.position = "bottom")
+```
+```{r}
+gapminder %>%
+  ggplot(aes(x = gdpPercap)) + geom_histogram() + facet_wrap(~continent)  #%>%
+  #ggplot(aes(x = gdpPercap)) + geom_histogram() + facet_grid(year~continent)
+```
+
+```{r}
+gapminder %>%
+  mutate(year = factor(year)) %>%
+  ggplot(aes(x = year, y = gdpPercap)) +
+  geom_boxplot() +
+  scale_y_log10()
+```
+
+```{r}
+gapminder %>%
+  mutate(year = factor(year)) %>%
+  ggplot(aes(x = year, y = lifeExp)) +
+  geom_boxplot()
+```
+
+```{r}
+gapminder %>%
+  group_by(year) %>%
+  filter(gdpPercap > median(gdpPercap))  %>%
+  ggplot(aes(x = year, y = gdpPercap, group = year)) +
+  geom_boxplot()
+```
+
+```{r}
+gapminder %>%
+  group_by(year) %>%
+  filter(gdpPercap > median(gdpPercap)) %>%
+  ggplot(aes(x = gdpPercap, y = lifeExp)) +
+  scale_x_log10() +
+  geom_point() +
+  geom_smooth(aes(group = continent), color = "blue") +
+  facet_wrap(~continent)
+```
+
+```{r}
+gapminder %>%
+  ggplot(aes(x = gdpPercap, y = lifeExp, color = country=="United States")) +
+  facet_wrap(~year) +
+  scale_x_log10() +
+  geom_point()+
+  geom_smooth()
+```
+
+```{r}
+gapminder %>%
+  mutate(col_country = case_when(
+    country == "United States" ~ "US",
+    country == "Japan" ~ "JP",
+    TRUE ~ "Other"
+  ))  %>%
+  ggplot(aes(x = gdpPercap, y = lifeExp, color = col_country, alpha = col_country)) +
+  scale_alpha_manual(values = c("US" = 1, "JP" = 1, "Other" = 0)) +
+  facet_wrap(~year) +
+  scale_x_log10()+
+  geom_smooth(aes(group = year), color = "black", method = "lm", show.legend = F) +
+  geom_point()
+```
+```{r}
+gapminder %>%
+  filter(country %in% c("United States", "Japan")) %>%
+  ggplot(aes(x = gdpPercap, y = lifeExp, color = country)) +
+  facet_wrap(~year) +
+  scale_x_log10(labels = scales::dollar) +
+  geom_smooth(data = gapminder,
+              aes(group = year), color = "black", method = "lm", show.legend = F) +
+  geom_point(size = 3) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+```
+

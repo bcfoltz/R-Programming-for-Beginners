@@ -1,0 +1,90 @@
+---
+title: "Lab 04"
+author: "Brandon Foltz"
+date: "2023-02-24"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(swirl)
+```
+
+```{r}
+vec_num <- seq(0, 15, length.out = 10)
+vec_num
+vec_int <- 11:20
+vec_int
+vec_cha <- LETTERS[17:26]
+vec_cha
+vec_fac <- factor(letters[1:10])
+vec_fac
+vec_let <- c(vec_cha, as.character(vec_fac))
+vec_let
+vec_ni <- c(vec_num[1:4], vec_int[7:10])
+vec_ni
+fac_vec <- rev(vec_fac)
+fac_vec
+```
+
+```{r}
+mat_empty <- matrix(data = NA, nrow = 10, ncol = 4)
+mat_empty
+mat_1 <- mat_empty
+mat_1[ ,1] <- vec_num
+mat_1
+mat_2 <- mat_1
+mat_2[ ,2]  <- vec_int
+mat_2
+mat_3 <- mat_2
+mat_3[, 3:4] <- cbind(vec_cha, vec_fac)
+mat_3
+row_4 <- mat_3[4,]
+row_4
+val_6_2 <- as.numeric(mat_3[6,2])
+mat_4 <- cbind(vec_num, vec_int, vec_cha, vec_fac)
+mat_4
+mat_t <- (t(mat_4))[ ,1:4]
+mat_t
+mat_big <- rbind(mat_t, mat_3)
+mat_big
+```
+
+```{r}
+list_1 <- list("vec_num" = vec_num, "row_4" = row_4)
+list_1
+row_4_2  <- list_1$row_4
+list_2 <- list("val_6_2" = val_6_2, "mat_big" = mat_big)
+list_3 <- list(c(list_1, list_2))
+list_3
+vector_3 <- unlist(list_3)
+vector_3
+str(list_3, max.level = 2)
+```
+
+```{r}
+df_1 <- data.frame(vec_num, vec_int)
+df_1
+vec_num_2 <- rev(df_1$vec_num)
+vec_num_2
+df_2 <- df_1
+df_2$number_vector <- vec_num_2
+df_2
+df_3 <- rbind(df_2, df_2)
+df_3
+col_vec <- colors()
+df_4 <- data.frame(
+  y = seq(31, 125, length.out = 20),
+  x = runif(20, min = 0, max = 10),
+  color = sample(col_vec, 20)
+)
+df_5 <- cbind(df_4, df_2)
+df_5
+df_6 <- data.frame(df_4, df_2)
+df_6
+```
+

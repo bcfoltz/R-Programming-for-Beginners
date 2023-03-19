@@ -1,0 +1,9 @@
+library(tidyverse)
+
+starwars %>%
+  filter(height > 150 & mass < 200) %>%
+  mutate(height_in_meters = height/100) %>%
+  select(height_in_meters, mass) %>%
+  arrange(mass) %>%
+  View()
+  #plot()

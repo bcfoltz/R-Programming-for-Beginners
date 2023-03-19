@@ -1,0 +1,48 @@
+---
+title: "Lab 01"
+author: "Brandon Foltz"
+date: "2023-02-22"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r include=FALSE}
+library(pander)
+library(tidyverse)
+data(swiss)
+```
+
+
+```{r}
+mean(swiss$Fertility)
+mean(swiss$Fertility[swiss$Catholic < mean(swiss$Catholic)])
+swiss %>%
+  pull(Fertility) %>%
+  mean() %>%
+  round(1)
+
+#mean above and below a threshold
+tapply(swiss$Fertility, factor(swiss$Catholic > mean(swiss$Catholic)), mean)
+
+lowcath <- round(mean(swiss$Fertility[swiss$Catholic < mean(swiss$Catholic)]))
+```
+
+The average fertiliy for cantons below the mean percentage Catholic is `r lowcath`.
+
+```{r}
+plot(Fertility ~ Catholic, data = swiss, xlab = "", ylab = "", main = "") +
+  title(main = "Fertility vs Catholic Pop",
+        xlab = "% Catholic",
+        ylab = "Fetility Rate (%)")
+hist(swiss$Fertility)
+boxplot(swiss$Fertility)
+```
+```{r}
+swiss$high_cath <- swiss$Catholic > 41
+boxplot(Fertility ~ high_cath, data = swiss)
+pairs(swiss)
+```
+

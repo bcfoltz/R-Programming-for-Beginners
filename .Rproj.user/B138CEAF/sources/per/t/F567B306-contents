@@ -1,0 +1,232 @@
+---
+title: 'Lecture 08: Strings'
+author: "Brandon Foltz"
+date: "2023-02-26"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+```{r}
+restaurants <- load("D:/R/R Programming for Beginners/data/restaurants.RData")
+```
+
+```{r substr}
+restaurants %>%
+  mutate(ZIP_length = nchar(Zip_Code)) %>%
+  count(ZIP_length)
+restaurants <- restaurants %>%
+  mutate(ZIP_5 = substr(Zip_Code, 1, 5))
+restaurants %>%
+  distinct(ZIP_5) %>%
+  head()
+```
+
+```{r paste}
+restaurants <- restaurants %>%
+  mutate(mailing_address = paste(Address, ", ", City, ", WA ", ZIP_5, sep = ""))
+restaurants %>%
+  distinct(mailing_address) %>%
+  head()
+```
+
+```{r paste0}
+paste(1:5, letters[1:5])
+paste(1:5, letters[1:5], sep = "")
+paste0(1:5, letters[1:5])
+```
+
+```{r paste}
+paste(letters[1:5], collapse = "!")
+paste(1:5, letters[1:5], sep = "+")
+paste0(1:5, letters[1:5], collapse = "???")
+paste(1:5, "Z", sep = "*")
+paste(1:5, "Z", sep = "*", collapse = " ~ ")
+# collapse() smashes everything into a single string
+```
+
+```{r}
+str_sub("Washington", 1, -3)
+str_c(letters[1:5], 1:5) # like paste0
+str_length("weasels")
+# str_to_upper(), str_to_lower(), str_to_title()
+head(unique(restaurants$City))
+restaurants <- restaurants %>%
+  mutate(across(c(Name, Address, City), ~str_to_upper(.)))
+head(unique(restaurants$City))
+# str_trim (also look at str_squish)
+head(unique(restaurants$Name), 4)
+restaurants <- restaurants %>%
+  mutate(across(where(is.character), ~ str_trim(.)))
+head(unique(restaurants$Name), 4)
+```
+
+```{r regular_expressions_regex}
+# patterns in text
+# literal characters, ie SEA or 206
+# meta characters / ^ $ . | etc
+# \\(206)\\ will find (206)
+coffee <- restaurants %>%
+  filter(str_detect(Name, "COFFEE|ESPRESSO|ROASTER"))
+coffee %>%
+  distinct(Name) %>%
+  head()
+```
+
+```{r killer_coffee}
+coffee %>%
+  select(Business_ID, Name, Inspection_Score, Date) %>%
+  group_by(Business_ID) %>%
+  filter(Date == max(Date)) %>%
+  distinct(.keep_all = TRUE) %>%
+  ggplot(aes(Inspection_Score)) +
+  geom_histogram(bins = 8) +
+  xlab("Most recent inspection score") +
+  ylab("") +
+  ggtitle("Histogram of Inspection Scores for Seattle Coffee Shops")
+```
+
+```{r 206_phones}
+area_code_206_pattern <- "^\\(?206"
+# ^ look at the beginning of the string, keeps from finding in the middle of string
+# \\(? means look for the left paren but its optional
+# 206 is the literal string to look for
+phone_test_examples <- c("2061234567", "(206)1234567", "(206) 123-4567", "555-206-1234", "206.123.4567")
+str_detect(phone_test_examples, area_code_206_pattern)
+str_view(phone_test_examples, area_code_206_pattern) #careful only give a snippet
+```
+
+```{r detect}
+restaurants %>%
+  mutate(has_206_number = 
+           str_detect(Phone, area_code_206_pattern)) %>%
+  count(has_206_number)
+```
+
+```{r extract}
+direction_pattern <- " (N|NW|NE|S|SW|SE|W|E)( |$)" #match on any of these and ( |$) says there is a either there is a space after or its the end of the string, i.e. space or end
+direction_examples <- c("2912 THORNDYKE AVE W", "512 NW 65TH ST", "407 CEDAR ST", "15 NICKERSON ST")
+str_extract(direction_examples, direction_pattern) 
+```
+
+```{r where_is_address}
+restaurants %>%
+  distinct(Address) %>%
+  mutate(city_region = 
+           str_trim(str_extract(Address, direction_pattern))) %>%
+  count(city_region) %>%
+  arrange(desc(n))
+```
+
+```{r replace}
+# street level analysis remove building numbers
+number_pattern <- "^[0-9]*-?[A-Z]? (1/2 )?"
+number_examples <-
+  c("2812 THORNDYKE AVE W", "1ST AVE", "10A 1ST AVE", "10-A 1ST AVE",
+    "5201-B UNIVERSITY WAY NE", "7040 1/2 15TH AVE NW")
+str_replace(number_examples, number_pattern, replacement = "")
+# str_remove is the same thing without the replacement argument
+# ^[0-9] look for a leading digit at the beginning
+# * potentially match more digits after the first
+# -? optionally match a hyphen
+# [A-Z]? optionally match a letter [A-Z]
+# Match a space
+# (1/2 )? optionally matches 1/2 followed by a space
+```
+
+```{r}
+restaurants <- restaurants %>%
+  mutate(street_only = str_remove(Address, number_pattern))
+restaurants %>%
+  distinct(street_only) %>%
+  head(10)
+```
+
+```{r}
+unit_pattern <- " (#|STE|SUITE|SHOP_UNIT).*$"
+unit_examples <- 
+  c("1ST AVE", "RAINIER AVE S #A", "FAUNTLEROY WAY SW STE 108",
+    "4TH AVE #100C", "NW 54TH ST")
+str_remove(unit_examples, unit_pattern)
+# match a space
+# match words
+# .*$ matches any character (.) after those words zero or more (*) times until the end of the string $
+```
+
+```{r}
+restaurants <- restaurants %>%
+  mutate(street_only =
+           str_trim(str_remove(street_only, unit_pattern)))
+restaurants %>%
+  distinct(street_only) %>%
+  head(11)
+```
+
+```{r danger}
+restaurants %>%
+  filter(Inspection_Score > 45) %>%
+  distinct(Business_ID, Date, Inspection_Score, street_only) %>%
+  count(street_only) %>%
+  arrange(desc(n)) %>%
+  head(5)
+```
+
+```{r}
+head(str_split_fixed(restaurants$Violation_Description, " - ", n = 2))
+```
+
+```{r}
+library(lubridate)
+recent_scores <- restaurants %>%
+  select(Name, Address, City, Inspection_Score, Inspection_Date) %>%
+  filter(!is.na(Inspection_Score)) %>%
+  group_by(Name) %>%
+  arrange(desc(Inspection_Score)) %>%
+  slice(1) %>%
+  ungroup() %>%
+  mutate_at(vars(Name, Address, City), ~ str_to_title(.)) %>%
+  mutate(Inspection_Date = mdy(Inspection_Date)) %>%
+  sample_n(5)
+
+library(scales)
+
+# dynamic sentence
+recent_scores %>%
+  mutate(text_desc = 
+           paste(Name,
+                 "is located at", Address, "in", City,
+                 "and recieved a score of", Inspection_Score, "on",
+                 month(Inspection_Date, label=TRUE, abbr=FALSE),
+                 paste0(year(Inspection_Date), "."))) %>%
+  select(text_desc)
+```
+
+```{r glue}
+(score_text <- recent_scores %>%
+   mutate(text_desc = 
+            str_glue("{Name} is located at {Address} in {City} ",
+                     "and recieved a score of {Inspection_Score} ",
+                     "on {month(when, label = TRUE, abbr = FALSE)} ",
+                     "{ordinal(day(when))}, {year(when)}.",
+                     when = Inspection_Date)) %>%
+   select(text_desc))
+```
+
+```{r wrap}
+score_text %>%
+  pull(text_desc) %>%
+  str_wrap(width = 70) %>%
+  paste0("\n\n") %>% # add two line breaks as a paragraph break
+  cat() # combines text and prints it
+
+# other useful functions
+# str_pad(string, width, side, pad)
+# str_subset(string, pattern)
+# str_which(string, pattern)
+# str_replace_all(string, pattern, replacement)
+# str_squish(string)
+```
+

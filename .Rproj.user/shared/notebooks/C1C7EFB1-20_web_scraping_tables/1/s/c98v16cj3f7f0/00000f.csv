@@ -1,0 +1,8 @@
+"0","col_link <- ""https://www.patriotsoftware.com/blog/accounting/average-cost-living-by-state/"""
+"0","col_page <- read_html(col_link)"
+"0",""
+"0","col_table <- col_page %>%"
+"0","  html_nodes(""table.has-fixed-layout"") %>%"
+"0","  html_table()  %>%"
+"0","  .[[1]]"
+"0",""

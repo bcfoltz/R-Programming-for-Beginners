@@ -1,0 +1,3 @@
+"0","synopsis <-page %>%"
+"0","  html_nodes("".ipl-rating-widget+ p , .ratings-metascore+ p"") %>%"
+"0","  html_text()"

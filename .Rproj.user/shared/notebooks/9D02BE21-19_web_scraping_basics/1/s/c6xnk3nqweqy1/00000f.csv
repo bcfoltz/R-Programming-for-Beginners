@@ -1,0 +1,3 @@
+"0","rating <- page %>%"
+"0","  html_nodes("".ipl-rating-star.small .ipl-rating-star__rating"") %>%"
+"0","  html_text()"

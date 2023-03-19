@@ -1,0 +1,107 @@
+---
+title: "Lecture 05"
+author: "Brandon Foltz"
+date: "2023-02-25"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r loading_csv}
+library(tidyverse)
+billboard_2000_raw <- read_csv(file = "https://clanfear.github.io/CSSS508/Lectures/Week5/data/billboard.csv")
+spec(billboard_2000_raw)
+str(billboard_2000_raw[ , 65:ncol(billboard_2000_raw)])
+bb_types  <- paste(c("icccD", rep("i", 76)), collapse = "")
+billboard_2000_raw <- read_csv(file = "https://clanfear.github.io/CSSS508/Lectures/Week5/data/billboard.csv", col_types = bb_types)
+str(billboard_2000_raw)
+write_csv(billboard_2000_raw, file = "../data/billboard_2000.csv")
+dput(head(cars, 8))
+# the actual observation is week since entering Hot 100
+# pivot_longer() and pivot_wider()
+# separate() extract_numeric()
+```
+
+```{r first_checks}
+# did the last rows/cols make it in?
+# are col names in good shape. col_names= or rename()
+# are there decorative blanks rows or columns. Use filter() and select()
+# how are missing values are represented? NA, "", ".", "999" Use mutate() with ifelse().
+# are there character data / numeric data being misrepresented? zipcodes for example. Mod col_types or use mutate() as.character or as.numeric
+```
+
+```{r}
+billboard_2000 <- billboard_2000_raw %>%
+  pivot_longer(starts_with("wk"),
+               names_to = "week",
+               values_to = "rank")
+dim(billboard_2000)
+summary(billboard_2000$rank) # lots of NAs
+billboard_2000 <- billboard_2000_raw %>%
+  pivot_longer(starts_with("wk"),
+               names_to = "week",
+               values_to = "rank",
+               values_drop_na = TRUE,
+               names_prefix = "wk",
+               names_transform = list(week = as.integer))
+summary(billboard_2000$rank)
+dim(billboard_2000)
+summary(billboard_2000$week)
+#billboard_2000  <- billboard_2000 %>%
+ # mutate(week = parse_number(week)) #strip off the week number
+summary(billboard_2000$week)
+```
+
+```{r}
+billboard_2000 <- billboard_2000 %>%
+  separate(time, into = c("minutes", "seconds"),
+           sep = ":", convert = TRUE) %>%
+  mutate(length = minutes + seconds / 60) %>%
+  select(-minutes, -seconds)
+summary(billboard_2000$length)
+```
+
+```{r}
+billboard_2000 <- billboard_2000 %>%
+  group_by(artist, track) %>%
+  mutate("Weeks at #1" = sum(rank == 1),
+         "Peak rank" = ifelse(any(rank == 1),
+                              "Hit #1",
+                              "Didn't #1")) %>%
+  ungroup()
+```
+```{r}
+billboard_trajectories <- 
+  ggplot(data = billboard_2000,
+         aes(x = week, y = rank, group = track,
+         color = `Peak rank`)) +
+  geom_line(aes (size = `Peak rank`), alpha = 0.4) +
+  scale_x_log10(breaks = c(0,70,10)) +
+  scale_y_reverse() +
+  theme_classic() +
+  xlab("Week") + ylab("Rank") +
+  scale_color_manual(values = c("black", "red")) +
+  scale_size_manual(values = c(0.25, 1)) +
+  theme(legend.position = c(0.90, 0.25),
+        legend.background = element_rect(fill = "transparent"))
+billboard_trajectories
+```
+
+```{r}
+billboard_2000 %>%
+  distinct(artist, track, `Weeks at #1`) %>%
+  arrange(desc(`Weeks at #1`)) %>%
+  head(7)
+```
+
+```{r}
+billboard_2000  <- billboard_2000 %>%
+  mutate(date = date.entered + (week -1) *7)
+billboard_2000 %>%
+  arrange(artist, track, week)  %>%
+  select(artist, date.entered, week, date, rank) %>%
+  head(4)
+```
+

@@ -1,0 +1,4 @@
+"0","movie_links <- page %>%"
+"0","  html_nodes("".lister-item-header a"") %>%"
+"0","  html_attr(""href"") %>%"
+"0","  paste(""https://www.imdb.com"", ., sep = """")"

@@ -1,0 +1,28 @@
+---
+title: "Lab 03"
+author: "Brandon Foltz"
+date: "2023-02-24"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages}
+library(tidyverse)
+library(gapminder)
+library(pander)
+library(nycflights13)
+```
+
+```{r}
+flights %>%
+  group_by(carrier) %>%
+  summarise(avg_delay = mean(dep_delay, na.rm = TRUE)) %>%
+  left_join(airlines) %>%
+  arrange(desc(avg_delay))  %>%
+  ggplot(aes(x = carrier, y = avg_delay)) +
+  geom_col()
+```
+

@@ -1,0 +1,13 @@
+---
+title: "Basics of Web Scraping"
+author: "Brandon Foltz"
+date: "2023-03-05"
+output: html_document
+---
+
+https://youtu.be/l37n_HDD1qs
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(robotstxt)
+```

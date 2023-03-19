@@ -1,0 +1,211 @@
+---
+title: "Lecture 6: Loops"
+author: "Brandon Foltz"
+date: "2023-02-25"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+```{r}
+swiss_means <- setNames(numeric(ncol(swiss)), colnames(swiss))
+for(i in seq_along(swiss)) {
+  swiss_means[i] <- mean(swiss[[i]])
+}
+swiss_means
+```
+
+```{r}
+# for each of these values - in order - do this thing
+# set index variable usually i
+# do some set of things
+# is there another value
+# update index
+# when out of index = done
+
+for (i in 1:10) {
+  print(i^2)
+}
+
+some_letters <- letters[4:6]
+for (i in some_letters) {
+  print(i)
+}
+
+for (a in seq_along(some_letters)) {
+  print(paste0("Letter ", a, ": ", some_letters[a]))
+}
+
+# seq_along() creates an integer vector equal to 1:length(x)
+```
+
+```{r pre_allocation}
+# numeric(num_of_iters) Single numeric character
+# character(num_of_iters) Single character value
+# logical(num_of_iters) Single T/F per iteration
+# matrix(NA, nrow = num_of_iters, ncol = length_of_vector) Numeric vector per iteration
+# vector("list", num_of_iters)
+
+iters <- 10 # set number of iterations
+output_loop <- numeric(iters) # pre allocate numeric vector
+for (i in 1:iters) {
+  output_loop[i] <- (i-1)^2 + (i-2)^2
+}
+output_loop
+```
+
+```{r set_names}
+(names_to_paste <- paste0("iter ", letters[1:5]))
+
+n_vector <- numeric(5)
+names(n_vector) <- names_to_paste
+# same as above but shorter and more universally workable
+(n_vector <- setNames(numeric(5), names_to_paste))
+```
+
+```{r regression_models_example}
+set.seed(98105)
+n <- 300
+x <- rnorm(n, mean = 5, sd = 4)
+sim_data <-
+  data.frame(x=x,
+             y = -0.5*x + 0.05*x^2 + rnorm(n, sd = 1))
+ggplot(data = sim_data, aes(x=x, y=y)) +
+  geom_point() +
+  ggtitle("Simulated Data")
+```
+
+```{r}
+# named vector of models
+models <- c("intercept only" = "y ~ 1",
+            "linear" = "y ~ x",
+            "quadratic" = "y ~ x + I(x^2)",
+            "cubic" = "y ~ x + I(x^2) + I(x^3)")
+
+#pre-allocate a list to store the fitted models
+fitted_lms <- vector("list", length(models)) # initiate list
+names(fitted_lms) <- names(models) # give entries good names
+fitted_lms
+
+for (mod in names(models)) {
+  fitted_lms[[mod]] <- lm(formula(models[mod]), data = sim_data)
+}
+fitted_lms
+
+predicted_data <- sim_data
+for (mod in names(models)) {
+  # make a new column in predicted_data for each model's predictions
+  predicted_data[[mod]] <- predict(fitted_lms[[mod]],
+                                   newdata = predicted_data)
+}
+
+tidy_predicted_data <- predicted_data %>%
+  pivot_longer(3:6,
+               names_to = "Model",
+               values_to = "Prediction") %>%
+  mutate(Model = factor(Model, levels = names(models)))
+head(tidy_predicted_data)
+
+ggplot() +
+  geom_point(data = sim_data,
+             aes(x=x,
+             y=y)) +
+  geom_line(data = tidy_predicted_data,
+            aes(x = x,
+                y = Prediction,
+                group = Model,
+                color = Model),
+            alpha = 0.5,
+            linewidth = 2) +
+  ggtitle("Predicted Trends from Regression") +
+  theme_bw()
+```
+
+```{r cross_validation}
+K <- 10
+CV_predictions <- sim_data
+CV_predictions$fold <- sample(rep(1:K, length.out = nrow(CV_predictions)),
+                              replace = FALSE)
+CV_predictions[ , names(models)] <- NA # blank columns by model names
+head(CV_predictions)
+
+for (mod in names(models)) {
+  for (k in 1:K) {
+    # TRUE/FALSE vector of rows in the fold
+    fold_rows <- (CV_predictions$fold == k)
+    #fit model to data not in fold
+    temp_mod <- lm(formula(models[mod]),
+                   data = CV_predictions[!fold_rows, ])
+    # predict on data in fold
+    CV_predictions[fold_rows, mod] <-
+      predict(temp_mod, newdata = CV_predictions[fold_rows, ])
+  }
+}
+```
+```{r MSE}
+CV_MSE <- setNames(numeric(length(models)), names(models))
+for (mod in names(models)) {
+  pred_sq_error <- (CV_predictions$y - CV_predictions[[mod]])^2
+  CV_MSE[mod] <- mean(pred_sq_error)
+}
+CV_MSE
+```
+
+```{r conditional_flow}
+for (i in 1:10) {
+  if(i %% 2 == 0) {
+    print(paste0("The number ", i, " is even."))
+  } else if (i %% 3 == 0) {
+    print(paste0("The number ", i, " is divisible by 3."))
+  } else {
+    print(paste0("The number ", i, " is not divisible by 2 or 3."))
+  }
+}
+```
+
+```{r while_coin_flip_counter}
+num_heads <- 0
+num_flips <- 0
+while (num_heads < 4) {
+  coin_flip <- rbinom(n =1, size = 1, prob = 0.5)
+  if(coin_flip == 1) {num_heads <- num_heads +1}
+  num_flips <- num_flips + 1
+  }
+num_flips
+```
+
+```{r non_vectorized}
+my_vector <- rnorm(100000000)
+
+for_start <- proc.time()
+new_vector <- rep(NA, length(my_vector))
+for (position in 1:length(my_vector)) {
+  new_vector[position] <- my_vector[position] + 1
+}
+(for_time <- proc.time() - for_start)
+```
+
+```{r vectorized}
+vec_start <- proc.time()
+new_vector <- my_vector +1
+(vec_time <- proc.time() - vec_start)
+
+for_time / vec_time
+```
+
+```{r matrix_vector}
+# rowSums(), colSums(), rowMeans(), colMeans()
+(a_matrix <- matrix(1:12, nrow = 3, ncol = 4))
+rowSums(a_matrix)
+```
+
+```{r cumulatives}
+# cumsum(), cumprod(), cummin(), cummax()
+cumsum(1:7)
+# pmax() pmin()
+pmax(c(0,2,4), c(1,1,1), c(2,2,2))
+```
+

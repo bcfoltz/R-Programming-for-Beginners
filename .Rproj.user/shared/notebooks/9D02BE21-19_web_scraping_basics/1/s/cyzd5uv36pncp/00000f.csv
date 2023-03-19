@@ -1,0 +1,6 @@
+"0","link <- ""https://www.imdb.com/list/ls003041915/"""
+"0","page <- read_html(link)"
+"0",""
+"0","name  <-  page %>%"
+"0","  html_nodes("".lister-item-header a"") %>%"
+"0","  html_text()"

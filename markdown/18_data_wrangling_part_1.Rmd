@@ -1,0 +1,67 @@
+---
+title: "Intro to Data Wrangling - Part 1"
+author: "Brandon Foltz"
+date: "2023-02-28"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+#devtools::install_github("rstudio/EDAWR")
+library(EDAWR)
+```
+
+```{r}
+as_tibble(diamonds)
+diamonds$x %>%
+  round(2) %>%
+  mean()
+```
+
+```{r}
+  gather(cases, "year", "n", 2:4)
+
+cases  %>%
+  pivot_longer(!country, names_to = "year", values_to = "n")
+
+pollution %>%
+  pivot_wider(names_from = size, values_from = amount)
+
+spread(pollution, size, amount)
+separate(EDAWR$storms, date, c("year", "month", "day"), sep = "-")
+```
+
+```{r}
+select(storms, name, pressure) %>% head()
+
+```
+- everything but
+: range
+contains() name contains a character string
+ends_with() ends with a string
+everthing()
+matches() name matches a regular expression
+num_range() columns named x1, x2, x3, etc
+one_of() columns whose names are in a group of names
+starts_with() name starts with a character string
+
+```{r}
+filter(storms, wind>=50,
+       name %in% c("Alberto", "Alex", "Allison"))  %>%
+  head()
+```
+
+```{r}
+pollution %>%
+  group_by(city) %>%
+  summarise(mean = mean(amount), sum = sum(amount), n = n())
+```
+
+```{r}
+tb %>%
+  group_by(country, year) %>%
+  summarise(cases = sum(!is.na(cases))) %>%
+  summarise(cases = sum(cases))
+```
+

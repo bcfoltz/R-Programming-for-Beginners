@@ -1,0 +1,63 @@
+---
+title: "Basic Web Scraping"
+author: "Brandon Foltz"
+date: "2023-03-02"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(rvest)
+```
+
+```{r}
+link <- "https://www.imdb.com/list/ls003041915/"
+page <- read_html(link)
+
+name  <-  page %>%
+  html_nodes(".lister-item-header a") %>%
+  html_text()
+```
+
+```{r}
+year  <- page %>%
+  html_nodes(".text-muted.unbold") %>%
+  html_text()
+
+year <- year[4:103]
+```
+
+```{r}
+rating <- page %>%
+  html_nodes(".ipl-rating-star.small .ipl-rating-star__rating") %>%
+  html_text()
+```
+
+```{r}
+synopsis <-page %>%
+  html_nodes(".ipl-rating-widget+ p , .ratings-metascore+ p") %>%
+  html_text()
+```
+
+```{r}
+movies <- data.frame(name, year, rating, synopsis, stringsAsFactors = F)
+```
+
+```{r}
+movie_links <- page %>%
+  html_nodes(".lister-item-header a") %>%
+  html_attr("href") %>%
+  paste("https://www.imdb.com", ., sep = "")
+```
+
+```{r}
+get_cast <- function(movie_link) {
+  movie_link  <- "https://www.imdb.com/title/tt2911666/?ref_=ttls_li_tt"
+  movie_page <- read_html(movie_link)
+  movie_cast <- movie_page %>%
+    html_nodes(".primary_photo+ td a") %>%
+    html_text()
+}
+```
+

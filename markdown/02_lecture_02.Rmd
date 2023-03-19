@@ -1,0 +1,125 @@
+---
+title: "02_lecture_02"
+author: "Brandon Foltz"
+date: "2023-02-22"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r gapminder, echo = FALSE}
+library(gapminder)
+library(tidyverse)
+str(gapminder)
+```
+
+```{r subsetting, echo=FALSE}
+gapminder %>%
+  select(country) %>%
+  View()
+# select the country column only
+```
+```{r}
+gapminder$pop %>%
+  mean() %>%
+  log()
+# Find the log of the mean of the pop variable
+```
+
+```{r}
+gapminder %>%
+  filter(country == "Algeria")
+#select all ROWS where country is Algeria
+```
+
+```{r}
+gapminder %>%
+  filter(country %in% c("Algeria", "Turkey"))
+#filter ROWS for only the countries of Algeria and Turkey
+```
+
+```{r}
+gapminder %>%
+  filter(country == "Oman" & year > 1980) %>%
+  select(country, year)
+#get rid of the other variables
+```
+```{r}
+china <- gapminder %>%
+  filter(country == "China")
+head(china)
+```
+
+```{r}
+plot(lifeExp ~ year,
+     data = china,
+     xlab = "Year",
+     ylab = "Life expectany",
+     main = "Life Expectancy in China",
+     col = "red",
+     cex.lab = 1.5,
+     cex.main = 1.5,
+     pch = 16)
+```
+
+```{r}
+china %>%
+  ggplot(aes(x = year, y = lifeExp)) +
+  geom_point(color = "red", size = 3) +
+  ggtitle("China Life Expectancy") +
+  xlab("Year") +
+  ylab("Life Expectancy") +
+  theme_bw(base_size = 14)
+```
+```{r}
+lifeExp_by_year <- gapminder %>%
+  ggplot(aes(x = year, y = lifeExp, group = country, color = continent)) +
+  geom_line() +
+  ggtitle("China Life Expectancy") +
+  xlab("Year") +
+  ylab("Life Expectancy") +
+  theme_bw() +
+  facet_wrap(~continent) +
+  theme(legend.position = "none")
+
+lifeExp_by_year + theme(legend.position = "bottom")
+```
+
+```{r}
+china %>%
+  ggplot(aes(x = year, y = gdpPercap)) +
+  geom_line() +
+  scale_y_log10(breaks = c(1000, 2000, 3000, 4000, 5000),
+                labels = scales::dollar) +
+  xlim(1940, 2010) +
+  ggtitle("Chinese log GDP per Capita") +
+  theme_classic()
+```
+```{r}
+china %>%
+  ggplot(aes(x = year, y = gdpPercap)) +
+  geom_line() +
+  xlim(1940, 2010) +
+  ggtitle("Chinese GDP per Capita")
+```
+
+```{r}
+gapminder %>%
+  ggplot(aes(x = year, y = lifeExp, group = country)) +
+  geom_line(alpha = 0.5, aes(color = "Country", size = "Country")) +
+  geom_line(stat = "smooth", method = "loess",
+            aes(group = continent, color = "Continent", size = "Continent"), alpha = 0.5) +
+  facet_wrap(~continent, nrow = 2) +
+  scale_color_manual(name = "Life Exp. for:",
+                     values = c("Country" = "black", "Continent" = "blue")) +
+  scale_size_manual(name = "Life Exp. for:",
+                    values = c("Country" = 0.25, "Continent" = 3)) +
+  theme_minimal(base_size = 14) +
+  ylab("Years") + xlab("") +
+  ggtitle("Life Expectancy, 1952 - 2007", subtitle = "By continent and country") +
+  theme(legend.position = c(0.75, 0.2), axis.text.x = element_text(angle = 45))
+```
+
